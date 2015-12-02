@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<head>
+    <title>Inapp payment sample app</title>
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico">
+    <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="css/datetimepicker.css"/>
+    <link type="text/css" rel="stylesheet" href="css/app.css"/>
+    <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="js/angular-1.4.7.min.js"></script>
+    <script type="text/javascript" src="//code.angularjs.org/1.4.7/angular-route.js"></script>
+    <script type="text/javascript" src="js/ui-bootstrap-tpls-0.14.2.min.js"></script>
+    <script type="text/javascript" src="js/lodash-3.10.1.min.js"></script>
+    <script type="text/javascript" src="js/restangular-1.4.0.min.js"></script>
+    <script type="text/javascript" src="js/angular-base64.min.js"></script>
+    <script type="text/javascript" src="js/datetimepicker.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
+</head>
+<body ng-app="sampleApp">
+<div class="container">
+    <div class="page-header">
+        <h1><img src="logo.png" alt="payleven" width="208" height="82" id="logo"/> InAPP payment sample app</h1>
+    </div>
+    <div ng-controller="paymentController">
+        <div class="row">
+            <div class="col-md-12">
+                <uib-alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}
+                </uib-alert>
+                <table class="table table-striped" id="paymentsTable">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>External ID</th>
+                        <th>Merchant</th>
+                        <th>Payer</th>
+                        <th>Amount</th>
+                        <th>Currency</th>
+                        <th>Creation date</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="payment in payments" data-row="{{payment.id}}" class="payment-row">
+                        <td>{{payment.id}}</td>
+                        <td>{{payment.type}}</td>
+                        <td>{{payment.externalId}}</td>
+                        <td>{{ payment.merchant | limitTo: 10 }}{{payment.merchant.length > 10 ? '...' : ''}}</td>
+                        <td>{{ payment.payer | limitTo: 10 }}{{payment.payer.length > 10 ? '...' : ''}}</td>
+                        <td>{{payment.amount}}</td>
+                        <td>{{payment.currencyCode}}</td>
+                        <td>{{payment.created | date:'dd.MM.yyyy, HH:mm:ss'}}</td>
+                        <td>{{payment.status}}</td>
+                        <td>
+                            <button type="button" class="btn btn-info btn-sm"
+                                    ng-show="{{payment.type == 'CHARGE' && payment.status == 'OK'}}"
+                                    ng-click="openCreateRefundModal(payment.externalId, payment.merchant)">
+                                Create Refund
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm"
+                                    ng-show="{{payment.status == 'PENDING'}}" ng-click="setSuccess(payment.id)">Succeed
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm"
+                                    ng-show="{{payment.status == 'PENDING'}}" ng-click="setFailed(payment.id)">Failed
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    <uib-pagination total-items="totalItems" ng-model="currentPage" ng-change="pageChanged()"
+                                    items-per-page="itemsPerPage"></uib-pagination>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <button type="button" class="btn btn-primary" ng-click="openCreateChargeModal()">Create Charge</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="createChargeModal" type="text/ng-template">
+    <div class="modal-header">
+        <h3 class="modal-title">Create charge</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form">
+            <div class="form-group">
+                <label for="merchantToken">Merchant Token:</label>
+                <input type="text" class="form-control" id="merchantToken" placeholder="Merchant token"
+                       ng-model="merchantToken">
+            </div>
+            <div class="form-group">
+                <label for="userToken">Payer:</label>
+                <input type="text" class="form-control" id="userToken" placeholder="User token" ng-model="userToken">
+            </div>
+            <div class="form-group">
+                <label for="orderNumber">Order Number:</label>
+                <input type="text" class="form-control" id="orderNumber" placeholder="Order number"
+                       ng-model="orderNumber">
+            </div>
+            <div class="form-group">
+                <label for="amount">Amount:</label>
+                <input type="text" class="form-control" id="amount" placeholder="Amount" ng-model="amount">
+            </div>
+            <div class="form-group">
+                <label for="currencyCode">Currency:</label>
+                <input type="text" class="form-control" id="currencyCode" placeholder="Currency"
+                       ng-model="currencyCode">
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" type="button" ng-click="createCharge()">OK</button>
+        <button class="btn btn-default" type="button" ng-click="cancelCharge()">Cancel</button>
+    </div>
+</script>
+<script id="createRefundModal" type="text/ng-template">
+    <div class="modal-header">
+        <h3 class="modal-title">Create refund</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form">
+            <div class="form-group">
+                <label for="merchantToken">Merchant Token:</label>
+                <input type="text" class="form-control" id="merchantToken" placeholder="Merchant token"
+                       ng-model="merchantToken">
+            </div>
+            <div class="form-group">
+                <label for="orderNumber">Order Number:</label>
+                <input type="text" class="form-control" id="orderNumber" placeholder="Order number"
+                       ng-model="orderNumber">
+            </div>
+            <div class="form-group">
+                <label for="amount">Amount:</label>
+                <input type="text" class="form-control" id="amount" placeholder="Amount" ng-model="amount">
+            </div>
+            <div class="form-group">
+                <label for="currencyCode">Currency:</label>
+                <input type="text" class="form-control" id="currencyCode" placeholder="Currency"
+                       ng-model="currencyCode">
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" type="button" ng-click="createRefund()">OK</button>
+        <button class="btn btn-default" type="button" ng-click="cancelRefund()">Cancel</button>
+    </div>
+</script>
+</div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+#logo {
+  vertical-align: text-bottom;
+}
+
+iframe {
+  border: none;
+  width: 400px;
+  height: 700px;
+}
