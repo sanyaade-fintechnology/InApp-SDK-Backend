@@ -1,3 +1,9 @@
+### NOTE: 
+### Payleven and SumUp are now one company. The payleven In-App API is no longer supported. Please see [SumUp's developer products](http://docs.sumup.com/).
+
+---
+---
+
 # payleven In-App backend samples
 
 This project contains sample applications for backend to backend communication with payleven's In-App API.
